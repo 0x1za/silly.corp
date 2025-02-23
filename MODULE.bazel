@@ -93,6 +93,14 @@ rust.toolchain(
     versions = ["1.75.0"],
 )
 
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    manifests = ["//go:Cargo.toml"],
+)
+use_repo(crate, "crates")
+
+
 #########################
 # Java and other JVM languages:
 # https://github.com/bazelbuild/rules_jvm_external/blob/master/examples/bzlmod/MODULE.bazel
