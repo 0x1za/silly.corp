@@ -1,6 +1,5 @@
-workspace = { members = ["go"] }
 [package]
-name = "silly_corp"
+name = "go"
 version = "0.1.0"
 edition = "2021"
 

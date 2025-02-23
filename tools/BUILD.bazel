@@ -1,3 +1,5 @@
+load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
+
 """Developer tool binaries"""
 
 load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
@@ -5,4 +7,14 @@ load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_cons
 py_console_script_binary(
     name = "copier",
     pkg = "@pip//copier",
+)
+
+sh_binary(
+    name = "_run_under_cwd",
+    srcs = ["_run_under_cwd.sh"],
+)
+
+sh_binary(
+    name = "workspace_statu",
+    srcs = ["workspace_status.sh"],
 )
