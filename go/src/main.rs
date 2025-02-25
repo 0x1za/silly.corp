@@ -13,6 +13,7 @@ use axum::{
 use heed::{types::Str, Database, Env, EnvOpenOptions};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tempfile;
 use tower::ServiceBuilder;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -27,6 +28,8 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let path = tempfile::tempdir()?;
+
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO)
         .finish();
@@ -37,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let env = Arc::new(unsafe {
         EnvOpenOptions::new()
             .max_dbs(1) // Set the maximum number of databases
-            .open("src/data.mdb")?
+            .open(path)?
     });
 
     let mut wtxn = env.write_txn()?;
@@ -72,8 +75,16 @@ async fn logging_middleware(req: Request, next: Next) -> Response {
     response
 }
 
-async fn root() -> &'static str {
-    "Hello, World!"
+async fn root() -> (StatusCode, Json<ShortUrl>) {
+    let url = ShortUrl {
+        id: 0,
+        url: "".to_owned(),
+        alias: "".to_owned(),
+    };
+
+    // TODO (simbem) - Perform reads from key value database
+
+    (StatusCode::CREATED, Json(url))
 }
 
 async fn shorten(
