@@ -11,6 +11,8 @@ rust_binary(
         "@crates//:tokio",
         "@crates//:tower-http",
         "@crates//:tracing",
+        "@crates//:tower",
+        "@crates//:tempfile",
         "@crates//:tracing-subscriber",
     ],
 )
