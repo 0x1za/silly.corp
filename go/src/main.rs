@@ -13,7 +13,6 @@ use axum::{
 use heed::{types::Str, Database, Env, EnvOpenOptions};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tempfile;
 use tower::ServiceBuilder;
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -99,7 +98,7 @@ async fn shorten(
 
     // Offload the blocking LMDB write to a blocking thread.
     let env = state.env.clone();
-    let db = state.db.clone();
+    let db = state.db;
     let key = url.alias.clone();
     let val = url.url.clone();
 
