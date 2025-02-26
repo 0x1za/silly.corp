@@ -24,10 +24,6 @@ struct AppState {
     db: Database<Str, Str>,
 }
 
-trait WithError {
-    fn set_error(message: Option<String>) -> Self;
-}
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = tempfile::tempdir()?;
@@ -134,14 +130,4 @@ struct ShortUrl {
     url: String,
     alias: String,
     error: Option<String>,
-}
-
-impl WithError for ShortUrl {
-    fn set_error(message: Option<String>) -> Self {
-        Self {
-            url: String::new(),
-            alias: String::new(),
-            error: message,
-        }
-    }
 }
