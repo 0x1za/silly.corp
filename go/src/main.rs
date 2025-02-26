@@ -5,7 +5,7 @@ use axum::{
     extract::{Path, Request, State},
     http::StatusCode,
     middleware::{self, Next},
-    response::{Redirect, Response},
+    response::{IntoResponse, Redirect, Response},
     routing::{get, post},
     Json, Router,
 };
@@ -77,31 +77,17 @@ async fn logging_middleware(req: Request, next: Next) -> Response {
     response
 }
 
-async fn root(
-    State(state): State<AppState>,
-    Path(alias): Path<String>,
-) -> (StatusCode, Json<ShortUrl>) {
+async fn root(State(state): State<AppState>, Path(alias): Path<String>) -> impl IntoResponse {
     let env = state.env.clone();
     let db = state.db;
     let rtxn = env.read_txn().unwrap();
 
     match db.get(&rtxn, &alias) {
-        Ok(Some(value)) => {
-            let url = ShortUrl {
-                url: value.to_owned(),
-                alias,
-                error: None,
-            };
-            (StatusCode::FOUND, Json(url))
-        }
-        Ok(None) => {
-            let error_response = ShortUrl::set_error(Some("Alias not found".to_owned()));
-            (StatusCode::NOT_FOUND, Json(error_response))
-        }
+        Ok(Some(value)) => Redirect::temporary(value),
+        Ok(None) => Redirect::temporary("/"),
         Err(error) => {
             info!("Database read error: {}", error);
-            let error_response = ShortUrl::set_error(Some("Internal Server Error".to_owned()));
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+            Redirect::temporary("/")
         }
     }
 }
