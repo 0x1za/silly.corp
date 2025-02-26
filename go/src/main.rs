@@ -2,12 +2,10 @@ use std::time::Instant;
 
 use axum::{
     body::Body,
-    extract::Path,
-    extract::Request,
-    extract::State,
+    extract::{Path, Request, State},
     http::StatusCode,
     middleware::{self, Next},
-    response::Response,
+    response::{Redirect, Response},
     routing::{get, post},
     Json, Router,
 };
