@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use axum::{
     body::Body,
+    extract::Path,
     extract::Request,
     extract::State,
     http::StatusCode,
@@ -23,6 +24,10 @@ struct AppState {
     env: Arc<Env>,
     /// The LMDB database to store our requests
     db: Database<Str, Str>,
+}
+
+trait WithError {
+    fn set_error(message: Option<String>) -> Self;
 }
 
 #[tokio::main]
@@ -49,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app_state = AppState { env, db };
 
     let app = Router::new()
-        .route("/", get(root))
+        .route("/{alias}", get(root))
         .route("/", post(shorten))
         .layer(ServiceBuilder::new().layer(middleware::from_fn(logging_middleware)))
         .with_state(app_state);
@@ -74,16 +79,33 @@ async fn logging_middleware(req: Request, next: Next) -> Response {
     response
 }
 
-async fn root() -> (StatusCode, Json<ShortUrl>) {
-    let url = ShortUrl {
-        id: 0,
-        url: "".to_owned(),
-        alias: "".to_owned(),
-    };
+async fn root(
+    State(state): State<AppState>,
+    Path(alias): Path<String>,
+) -> (StatusCode, Json<ShortUrl>) {
+    let env = state.env.clone();
+    let db = state.db;
+    let rtxn = env.read_txn().unwrap();
 
-    // TODO (simbem) - Perform reads from key value database
-
-    (StatusCode::CREATED, Json(url))
+    match db.get(&rtxn, &alias) {
+        Ok(Some(value)) => {
+            let url = ShortUrl {
+                url: value.to_owned(),
+                alias,
+                error: None,
+            };
+            (StatusCode::FOUND, Json(url))
+        }
+        Ok(None) => {
+            let error_response = ShortUrl::set_error(Some("Alias not found".to_owned()));
+            (StatusCode::NOT_FOUND, Json(error_response))
+        }
+        Err(error) => {
+            info!("Database read error: {}", error);
+            let error_response = ShortUrl::set_error(Some("Internal Server Error".to_owned()));
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(error_response))
+        }
+    }
 }
 
 async fn shorten(
@@ -91,9 +113,9 @@ async fn shorten(
     Json(payload): Json<CreateShortUrl>,
 ) -> (StatusCode, Json<ShortUrl>) {
     let url = ShortUrl {
-        id: 1337,
         url: payload.url,
         alias: payload.alias,
+        error: None,
     };
 
     // Offload the blocking LMDB write to a blocking thread.
@@ -125,7 +147,17 @@ struct CreateShortUrl {
 
 #[derive(Serialize)]
 struct ShortUrl {
-    id: u64,
     url: String,
     alias: String,
+    error: Option<String>,
+}
+
+impl WithError for ShortUrl {
+    fn set_error(message: Option<String>) -> Self {
+        Self {
+            url: String::new(),
+            alias: String::new(),
+            error: message,
+        }
+    }
 }
