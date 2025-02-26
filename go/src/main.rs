@@ -79,10 +79,16 @@ async fn root(State(state): State<AppState>, Path(alias): Path<String>) -> impl 
     let rtxn = env.read_txn().unwrap();
 
     match db.get(&rtxn, &alias) {
-        Ok(Some(value)) => Redirect::temporary(value),
-        Ok(None) => Redirect::temporary("/"),
+        Ok(Some(value)) => {
+            info!("Redirecting {} to {}...", &alias, value);
+            Redirect::temporary(value)
+        }
+        Ok(None) => {
+            tracing::warn!("Short link {} not found....", &alias);
+            Redirect::temporary("/")
+        }
         Err(error) => {
-            info!("Database read error: {}", error);
+            tracing::error!("Database read error: {}", error);
             Redirect::temporary("/")
         }
     }
