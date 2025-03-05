@@ -1,0 +1,18 @@
+load("@rules_rust//rust:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "go",
+    srcs = ["src/main.rs"],
+    deps = [
+        "@crates//:axum",
+        "@crates//:byteorder",
+        "@crates//:heed",
+        "@crates//:serde",
+        "@crates//:tokio",
+        "@crates//:tower-http",
+        "@crates//:tracing",
+        "@crates//:tower",
+        "@crates//:tempfile",
+        "@crates//:tracing-subscriber",
+    ],
+)

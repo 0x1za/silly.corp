@@ -31,10 +31,6 @@ go_sdk.nogo(nogo = "//tools/lint:nogo")
 go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//:go.mod")
 
-# All *direct* Go dependencies of the module have to be listed explicitly.
-# Run 'bazel mod tidy' to update this
-use_repo(go_deps)
-
 #########################
 # JavaScript and pnpm package manager
 pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm")
@@ -96,6 +92,14 @@ rust.toolchain(
     edition = "2021",
     versions = ["1.75.0"],
 )
+
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.from_cargo(
+    name = "crates",
+    manifests = ["//go:Cargo.toml"],
+)
+use_repo(crate, "crates")
+
 
 #########################
 # Java and other JVM languages:
